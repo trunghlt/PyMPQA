@@ -27,14 +27,16 @@ def tokenize(str, delimiter):
 
 class Doc(object):
 
-    def __init__(self, data_home, parent, leaf):
+    def __init__(self, data_home, parent, leaf, ver):
+        self.ver = ver
+
         f = open(os.path.join(data_home, "docs", parent, leaf))
         self.text = f.read().decode('utf-8')
         f.close()
         
         self.sentences = []
         f = open(os.path.join(data_home, "man_anns", parent, leaf,
-                              "gatesentences.mpqa.2.0"))
+                              "gatesentences.mpqa.%s" % ver))
         reader = csv.reader(f, delimiter="\t")
         for row in reader:
             l, r = row[1].split(',')
@@ -44,7 +46,7 @@ class Doc(object):
 
         self.annotations = []
         f = open(os.path.join(data_home, "man_anns", parent, leaf,
-                             "gateman.mpqa.lre.2.0"))
+                             "gateman.mpqa.lre.%s" % ver))
         reader = csv.reader(f, delimiter="\t")
         for row in reader:
             if row[0].strip()[0] == '#': 
@@ -78,13 +80,18 @@ class Doc(object):
             else:
                 yield self.text[l:r], "objective"
 
+def get_ver(data_home):
+    ''' return version of data '''
+    return data_home[-3:]
+
 def extract_sentences(data_home):
+    ver = get_ver(data_home)
     docs_path = os.path.join(data_home, "docs")
     man_anns_path = os.path.join(data_home, "man_anns")
     docs = []
     for parent in os.listdir(docs_path):
         for leaf in os.listdir(os.path.join(docs_path, parent)):
-            docs.append(Doc(data_home, parent, leaf))
+            docs.append(Doc(data_home, parent, leaf, ver))
     writer = csv.writer(sys.stdout, delimiter='\t')
     for doc in docs:
         for sent, label in doc.sub_obj_sents():
